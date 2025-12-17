@@ -4,12 +4,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ======================
-# KONFIGURASI HALAMAN
+# PAGE CONFIGURATION
 # ======================
 st.set_page_config(
-    page_title="Dashboard Opini Publik MBG",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Public Opinion Analysis Dashboard – MBG",
+    layout="wide"
 )
 
 # ======================
@@ -24,101 +23,100 @@ def load_data():
 df = load_data()
 
 # ======================
-# SIDEBAR = NAVBAR
+# SIDEBAR NAVIGATION
 # ======================
-st.sidebar.markdown("## 📊 MBG Dashboard")
-st.sidebar.markdown("Analisis Opini Publik")
-
+st.sidebar.title("Navigation")
 menu = st.sidebar.radio(
-    "Navigasi",
+    "",
     [
-        "📊 Overview",
-        "📈 Tren Komentar",
-        "💬 Analisis Sentimen",
-        "🔥 Korelasi Data",
-        "📁 Data Opini"
+        "Overview",
+        "Temporal Analysis",
+        "Sentiment Analysis",
+        "Correlation Analysis",
+        "Data Exploration"
     ]
 )
 
 st.sidebar.divider()
 
-# FILTER GLOBAL
-sentimen_filter = st.sidebar.multiselect(
-    "Filter Sentimen",
+sentiment_filter = st.sidebar.multiselect(
+    "Sentiment Filter",
     options=df["sentimen"].unique(),
     default=df["sentimen"].unique()
 )
 
-df_filtered = df[df["sentimen"].isin(sentimen_filter)]
+df_filtered = df[df["sentimen"].isin(sentiment_filter)]
 
 # ======================
 # OVERVIEW
 # ======================
-if menu == "📊 Overview":
-    st.title("📊 Overview Opini Publik MBG")
+if menu == "Overview":
+    st.title("Overview of Public Opinion on MBG")
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Komentar", len(df_filtered))
-    col2.metric("Rata-rata Like", round(df_filtered["jumlah_like"].mean(), 2))
-    col3.metric("Rata-rata Reply", round(df_filtered["jumlah_reply"].mean(), 2))
-    col4.metric("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2))
+    col1.metric("Total Comments", len(df_filtered))
+    col2.metric("Average Likes", round(df_filtered["jumlah_like"].mean(), 2))
+    col3.metric("Average Replies", round(df_filtered["jumlah_reply"].mean(), 2))
+    col4.metric("Average Sentiment Score", round(df_filtered["skor_sentimen"].mean(), 2))
 
     st.markdown("""
-    Halaman ini menyajikan ringkasan statistik utama dari data opini publik  
-    terhadap kasus keracunan **Program Makan Bergizi Gratis (MBG)**.
+    This section provides a general overview of public engagement and sentiment
+    regarding the Free Nutritious Meal Program (MBG) based on social media comments.
     """)
 
 # ======================
-# TREN KOMENTAR
+# TEMPORAL ANALYSIS
 # ======================
-elif menu == "📈 Tren Komentar":
-    st.title("📈 Tren Komentar dari Waktu ke Waktu")
+elif menu == "Temporal Analysis":
+    st.title("Temporal Trend of Public Comments")
 
-    df_tren = (
+    df_time = (
         df_filtered
-        .groupby(df_filtered["tanggal"].dt.date)
+        .set_index("tanggal")
+        .resample("D")
         .size()
+        .reset_index(name="total_comments")
     )
 
-    fig, ax = plt.subplots()
-    df_tren.plot(ax=ax)
-    ax.set_xlabel("Tanggal")
-    ax.set_ylabel("Jumlah Komentar")
-    ax.set_title("Tren Jumlah Komentar Harian")
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(df_time["tanggal"], df_time["total_comments"])
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Number of Comments")
+    ax.set_title("Daily Comment Volume Over Time")
+    ax.grid(alpha=0.3)
+
     st.pyplot(fig)
 
     st.markdown("""
-    Visualisasi ini menunjukkan dinamika jumlah komentar pengguna dari waktu  
-    ke waktu. Pola peningkatan dan penurunan komentar mencerminkan tingkat  
-    perhatian publik terhadap perkembangan isu keracunan MBG.
+    The line chart illustrates the temporal distribution of public comments.
+    Fluctuations indicate changes in public attention following developments
+    related to the MBG case.
     """)
 
 # ======================
-# ANALISIS SENTIMEN
+# SENTIMENT ANALYSIS
 # ======================
-elif menu == "💬 Analisis Sentimen":
-    st.title("💬 Distribusi Sentimen Opini Publik")
+elif menu == "Sentiment Analysis":
+    st.title("Sentiment Distribution")
 
     sentiment_counts = df_filtered["sentimen"].value_counts()
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(6, 4))
     sentiment_counts.plot(kind="bar", ax=ax)
-    ax.set_xlabel("Sentimen")
-    ax.set_ylabel("Jumlah Komentar")
+    ax.set_xlabel("Sentiment Category")
+    ax.set_ylabel("Number of Comments")
+    ax.set_title("Distribution of Sentiment Categories")
+    ax.grid(axis="y", alpha=0.3)
+
     st.pyplot(fig)
 
-    st.markdown("""
-    Diagram ini memperlihatkan distribusi sentimen opini publik yang  
-    diklasifikasikan ke dalam kategori positif, negatif, dan netral.
-    """)
-
 # ======================
-# KORELASI
+# CORRELATION ANALYSIS
 # ======================
-elif menu == "🔥 Korelasi Data":
-    st.title("🔥 Korelasi Antar Variabel Numerik")
+elif menu == "Correlation Analysis":
+    st.title("Correlation Between Numerical Variables")
 
-    kolom_numerik = [
+    numeric_columns = [
         "memiliki_gambar",
         "memiliki_video",
         "memiliki_tautan",
@@ -127,20 +125,17 @@ elif menu == "🔥 Korelasi Data":
         "skor_sentimen"
     ]
 
-    corr = df_filtered[kolom_numerik].corr(method="pearson")
+    corr = df_filtered[numeric_columns].corr(method="pearson")
 
     fig, ax = plt.subplots(figsize=(8, 5))
     sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
+    ax.set_title("Correlation Heatmap")
+
     st.pyplot(fig)
 
-    st.markdown("""
-    Heatmap ini menggambarkan hubungan antar variabel numerik yang  
-    berkaitan dengan tingkat interaksi dan sentimen opini publik.
-    """)
-
 # ======================
-# DATA
+# DATA EXPLORATION
 # ======================
-elif menu == "📁 Data Opini":
-    st.title("📁 Data Opini Publik (Tersaring)")
+elif menu == "Data Exploration":
+    st.title("Filtered Opinion Data")
     st.dataframe(df_filtered, use_container_width=True)
