@@ -18,7 +18,7 @@ st.sidebar.write("Jumlah data:", df.shape[0])
 # Distribusi Sentimen
 # ======================
 st.subheader("Distribusi Sentimen")
-sentiment_counts = df["label_sentimen"].value_counts()
+sentiment_counts = df["sentimen"].value_counts()
 
 fig1, ax1 = plt.subplots()
 sentiment_counts.plot(kind="bar", ax=ax1)
@@ -51,3 +51,4 @@ st.pyplot(fig2)
 # ======================
 st.subheader("Tabel Data Opini Publik")
 st.dataframe(df)
+
