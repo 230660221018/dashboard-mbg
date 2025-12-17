@@ -12,7 +12,42 @@ st.set_page_config(
 )
 
 # ======================
-# MEMUAT DATA
+# CUSTOM CSS (PROFESSIONAL LOOK)
+# ======================
+st.markdown("""
+<style>
+body {
+    background-color: #f5f7fb;
+}
+.block-container {
+    padding-top: 2rem;
+}
+.dashboard-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+.dashboard-subtitle {
+    font-size: 16px;
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+.card {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.section-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ======================
+# LOAD DATA
 # ======================
 @st.cache_data
 def load_data():
@@ -23,18 +58,17 @@ def load_data():
 df = load_data()
 
 # ======================
-# NAVIGASI (SIDEBAR)
+# SIDEBAR NAVIGASI
 # ======================
-st.sidebar.title("Navigasi Analisis")
-
+st.sidebar.title("Dashboard MBG")
 menu = st.sidebar.radio(
-    "",
+    "Menu Analisis",
     [
-        "Ringkasan Data",
-        "Tren Opini dari Waktu ke Waktu",
-        "Distribusi Sentimen Publik",
-        "Analisis Korelasi",
-        "Eksplorasi Data"
+        "Ringkasan",
+        "Tren Waktu",
+        "Sentimen",
+        "Korelasi",
+        "Data"
     ]
 )
 
@@ -49,73 +83,80 @@ filter_sentimen = st.sidebar.multiselect(
 df_filtered = df[df["sentimen"].isin(filter_sentimen)]
 
 # ======================
-# HALAMAN 1: RINGKASAN
+# HEADER UTAMA
 # ======================
-if menu == "Ringkasan Data":
-    st.title("Ringkasan Kondisi Opini Publik")
+st.markdown('<div class="dashboard-title">Dashboard Analisis Opini Publik MBG</div>', unsafe_allow_html=True)
+st.markdown('<div class="dashboard-subtitle">Analisis data komentar publik terkait kasus keracunan Program Makan Bergizi Gratis (MBG)</div>', unsafe_allow_html=True)
+
+# ======================
+# RINGKASAN
+# ======================
+if menu == "Ringkasan":
+    st.markdown('<div class="section-title">Ringkasan Statistik Utama</div>', unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Komentar", len(df_filtered))
-    col2.metric("Rata-rata Like", round(df_filtered["jumlah_like"].mean(), 2))
-    col3.metric("Rata-rata Balasan", round(df_filtered["jumlah_reply"].mean(), 2))
-    col4.metric("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2))
 
-    st.markdown("""
-    Halaman ini menyajikan gambaran umum kondisi data opini publik
-    terkait kasus keracunan Program Makan Bergizi Gratis (MBG)
-    berdasarkan tingkat interaksi dan sentimen pengguna.
-    """)
+    for col, title, value in zip(
+        [col1, col2, col3, col4],
+        ["Total Komentar", "Rata-rata Like", "Rata-rata Balasan", "Rata-rata Skor Sentimen"],
+        [
+            len(df_filtered),
+            round(df_filtered["jumlah_like"].mean(), 2),
+            round(df_filtered["jumlah_reply"].mean(), 2),
+            round(df_filtered["skor_sentimen"].mean(), 2)
+        ]
+    ):
+        col.markdown(f"""
+        <div class="card">
+            <h4>{title}</h4>
+            <h2>{value}</h2>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ======================
-# HALAMAN 2: TREN WAKTU
+# TREN WAKTU
 # ======================
-elif menu == "Tren Opini dari Waktu ke Waktu":
-    st.title("Tren Jumlah Komentar dari Waktu ke Waktu")
+elif menu == "Tren Waktu":
+    st.markdown('<div class="section-title">Tren Aktivitas Komentar</div>', unsafe_allow_html=True)
 
-    tren_harian = (
+    tren = (
         df_filtered
         .groupby(df_filtered["tanggal"].dt.date)
         .size()
         .reset_index(name="jumlah_komentar")
     )
 
-    fig, ax = plt.subplots(figsize=(11, 4))
-    ax.plot(tren_harian["tanggal"], tren_harian["jumlah_komentar"])
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(tren["tanggal"], tren["jumlah_komentar"])
     ax.set_xlabel("Tanggal")
     ax.set_ylabel("Jumlah Komentar")
-    ax.set_title("Perkembangan Aktivitas Komentar Harian")
     ax.grid(alpha=0.3)
 
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.pyplot(fig)
-
-    st.markdown("""
-    Visualisasi ini menunjukkan dinamika aktivitas komentar publik
-    dari waktu ke waktu. Lonjakan jumlah komentar mengindikasikan
-    meningkatnya perhatian masyarakat terhadap perkembangan isu MBG.
-    """)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================
-# HALAMAN 3: SENTIMEN
+# SENTIMEN
 # ======================
-elif menu == "Distribusi Sentimen Publik":
-    st.title("Distribusi Sentimen Opini Publik")
-
-    sentimen_count = df_filtered["sentimen"].value_counts()
+elif menu == "Sentimen":
+    st.markdown('<div class="section-title">Distribusi Sentimen Publik</div>', unsafe_allow_html=True)
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    sentimen_count.plot(kind="bar", ax=ax)
-    ax.set_xlabel("Kategori Sentimen")
+    df_filtered["sentimen"].value_counts().plot(kind="bar", ax=ax)
+    ax.set_xlabel("Sentimen")
     ax.set_ylabel("Jumlah Komentar")
-    ax.set_title("Dominasi Sentimen Publik")
     ax.grid(axis="y", alpha=0.3)
 
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.pyplot(fig)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================
-# HALAMAN 4: KORELASI
+# KORELASI
 # ======================
-elif menu == "Analisis Korelasi":
-    st.title("Analisis Korelasi Antar Variabel Numerik")
+elif menu == "Korelasi":
+    st.markdown('<div class="section-title">Korelasi Antar Variabel Numerik</div>', unsafe_allow_html=True)
 
     kolom_numerik = [
         "memiliki_gambar",
@@ -126,17 +167,20 @@ elif menu == "Analisis Korelasi":
         "skor_sentimen"
     ]
 
-    corr = df_filtered[kolom_numerik].corr(method="pearson")
+    corr = df_filtered[kolom_numerik].corr()
 
     fig, ax = plt.subplots(figsize=(8, 5))
     sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
-    ax.set_title("Heatmap Korelasi")
 
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.pyplot(fig)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================
-# HALAMAN 5: DATA
+# DATA
 # ======================
-elif menu == "Eksplorasi Data":
-    st.title("Eksplorasi Data Opini Publik")
+elif menu == "Data":
+    st.markdown('<div class="section-title">Data Opini Publik</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.dataframe(df_filtered, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
