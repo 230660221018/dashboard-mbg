@@ -8,7 +8,7 @@ import matplotlib.dates as mdates
 # KONFIGURASI HALAMAN
 # ======================================================
 st.set_page_config(
-    page_title="Dashboard Analisis Opini Publik Terhadap Kasus Keracunan MBG",
+    page_title="Dashboard Analisis Opini Publik MBG",
     layout="wide"
 )
 
@@ -277,4 +277,5 @@ elif menu == "Data":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.dataframe(df_filtered, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
 
