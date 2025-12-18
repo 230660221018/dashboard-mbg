@@ -80,7 +80,7 @@ body { background-color: #f5f7fb; }
 # ======================================================
 # MONGODB CONNECTION
 # ======================================================
-MONGO_URI = "mongodb+srv://kelompok2:4MMZcM7wapHV0h00@cluster0.ez7evbb.mongodb.net/?appName=Cluster0"
+MONGO_URI = "mongodb+srv://kelompok2:4MMZcM7wapHV0h00@cluster0.ez7evbb.mongodb.net/?appName=Cluster"
 
 client = MongoClient(MONGO_URI)
 db = client["mbg_opini"]
@@ -234,3 +234,4 @@ elif menu == "Data":
 
     st.caption(f"Menampilkan {len(df_show)} dari {len(df_filtered)} data")
     st.dataframe(df_show, use_container_width=True, height=450)
+
