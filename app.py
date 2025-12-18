@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pymongo import MongoClient
 
 # ======================================================
 # KONFIGURASI HALAMAN
@@ -77,11 +78,21 @@ body { background-color: #f5f7fb; }
 """, unsafe_allow_html=True)
 
 # ======================================================
-# LOAD DATA
+# MONGODB CONNECTION
+# ======================================================
+MONGO_URI = "mongodb+srv://kelompok2:4MMZcM7wapHV0h00@cluster0.ez7evbb.mongodb.net/?appName=Cluster0"
+
+client = MongoClient(MONGO_URI)
+db = client["mbg_opini"]
+collection = db["data_opini"]
+
+# ======================================================
+# LOAD DATA (DARI MONGODB)
 # ======================================================
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data_opini_clean.csv")
+    data = list(collection.find({}, {"_id": 0}))
+    df = pd.DataFrame(data)
     df["tanggal"] = pd.to_datetime(df["tanggal"])
     return df.sort_values("tanggal")
 
@@ -108,7 +119,7 @@ filter_sentimen = st.sidebar.multiselect(
 df_filtered = df[df["sentimen"].isin(filter_sentimen)]
 
 # ======================================================
-# HERO (TEKS TIDAK DIUBAH)
+# HERO
 # ======================================================
 st.markdown("""
 <div class="hero">
@@ -157,13 +168,6 @@ if menu == "Ringkasan":
 # ======================================================
 elif menu == "Tren Waktu":
     st.markdown('<div class="section-title">Tren Jumlah Komentar Harian</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Visualisasi ini menunjukkan dinamika jumlah komentar publik dari waktu ke waktu '
-        'berdasarkan tanggal unggahan.'
-        '</div>',
-        unsafe_allow_html=True
-    )
 
     tren = (
         df_filtered
@@ -183,13 +187,6 @@ elif menu == "Tren Waktu":
 # ======================================================
 elif menu == "Sentimen":
     st.markdown('<div class="section-title">Distribusi Sentimen Publik</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Visualisasi ini menunjukkan proporsi sentimen positif, netral, dan negatif '
-        'dalam komentar publik.'
-        '</div>',
-        unsafe_allow_html=True
-    )
 
     sent = df_filtered["sentimen"].value_counts().reset_index()
     sent.columns = ["sentimen", "jumlah"]
@@ -204,13 +201,6 @@ elif menu == "Sentimen":
 # ======================================================
 elif menu == "Korelasi":
     st.markdown('<div class="section-title">Korelasi Antar Variabel</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Heatmap berikut menunjukkan hubungan antar variabel numerik '
-        'yang berkaitan dengan interaksi pengguna.'
-        '</div>',
-        unsafe_allow_html=True
-    )
 
     cols = [
         "memiliki_gambar",
@@ -233,13 +223,6 @@ elif menu == "Korelasi":
 # ======================================================
 elif menu == "Data":
     st.markdown('<div class="section-title">Tabel Data Opini Publik</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Tabel berikut menampilkan data komentar publik yang telah dibersihkan '
-        'dan digunakan sebagai dasar analisis.'
-        '</div>',
-        unsafe_allow_html=True
-    )
 
     keyword = st.text_input("Cari kata kunci komentar")
 
