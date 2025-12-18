@@ -1,248 +1,222 @@
+# ==============================
+# app.py
+# Dashboard Analisis Komentar Publik
+# Redesign KPI Profesional & Mudah Dipahami
+# ==============================
+
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 
-# ======================================================
-# PAGE CONFIG
-# ======================================================
+# ------------------------------
+# KONFIGURASI HALAMAN
+# ------------------------------
 st.set_page_config(
-    page_title="Dashboard Analisis Opini Publik MBG",
+    page_title="Dashboard Analisis Komentar Publik",
     page_icon="📊",
     layout="wide"
 )
 
-# ======================================================
-# SESSION STATE NAVIGATION (ANTI ERROR)
-# ======================================================
-if "menu" not in st.session_state:
-    st.session_state.menu = "Ringkasan"
+# ------------------------------
+# STYLE GLOBAL
+# ------------------------------
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: #f6f7fb;
+    }
+    .kpi-card {
+        background: linear-gradient(135deg, #ffffff, #f9fafc);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        height: 100%;
+    }
+    .kpi-title {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+    .kpi-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: #111827;
+    }
+    .kpi-desc {
+        font-size: 13px;
+        color: #4b5563;
+        margin-top: 6px;
+    }
+    .sent-pos { color: #16a34a; font-weight: 600; }
+    .sent-neg { color: #dc2626; font-weight: 600; }
+    .sent-net { color: #f59e0b; font-weight: 600; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-# ======================================================
-# CUSTOM CSS – ENTERPRISE LEVEL
-# ======================================================
-st.markdown("""
-<style>
-body { background-color: #f6f8fc; }
-
-.block-container {
-    padding-top: 1.4rem;
-    padding-bottom: 2.5rem;
-}
-
-.hero {
-    background: linear-gradient(120deg, #020617, #1e293b);
-    padding: 2.8rem;
-    border-radius: 24px;
-    color: white;
-    margin-bottom: 2.6rem;
-}
-
-.hero-title {
-    font-size: 34px;
-    font-weight: 800;
-}
-
-.hero-subtitle {
-    font-size: 15px;
-    opacity: 0.9;
-    max-width: 960px;
-    line-height: 1.7;
-}
-
-.card {
-    background-color: white;
-    padding: 1.8rem;
-    border-radius: 22px;
-    box-shadow: 0 18px 40px rgba(0,0,0,0.08);
-    margin-bottom: 1.6rem;
-}
-
-.kpi-card h4 {
-    color: #64748b;
-    font-weight: 600;
-    margin-bottom: 0.2rem;
-}
-
-.kpi-card h2 {
-    margin: 0;
-    font-size: 30px;
-    font-weight: 800;
-}
-
-.kpi-card button {
-    margin-top: 0.8rem;
-    width: 100%;
-}
-
-.section-title {
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.section-desc {
-    font-size: 14px;
-    color: #475569;
-    max-width: 900px;
-    margin-bottom: 1.4rem;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ======================================================
-# LOAD DATA
-# ======================================================
+# ------------------------------
+# LOAD DATA (CONTOH)
+# GANTI DENGAN DATASET ASLI ANDA
+# ------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data_opini_clean.csv")
-    df["tanggal"] = pd.to_datetime(df["tanggal"])
-    return df.sort_values("tanggal")
+    np.random.seed(42)
+    data = pd.DataFrame({
+        "tanggal": pd.date_range("2024-01-01", periods=80),
+        "like": np.random.poisson(4, 80),
+        "balasan": np.random.binomial(1, 0.25, 80),
+        "sentimen": np.random.choice([
+            "Positif", "Negatif", "Netral"
+        ], p=[0.35, 0.45, 0.20], size=80)
+    })
+
+    data["skor_sentimen"] = data["sentimen"].map({
+        "Positif": 1,
+        "Netral": 0,
+        "Negatif": -1
+    })
+
+    return data
 
 df = load_data()
 
-# ======================================================
+# ------------------------------
 # SIDEBAR
-# ======================================================
-st.sidebar.markdown("## Navigasi Analisis")
+# ------------------------------
+st.sidebar.title("⚙️ Kontrol Analisis")
+st.sidebar.markdown("Gunakan filter untuk menyesuaikan tampilan data.")
 
-menu = st.sidebar.radio(
-    "Menu Dashboard",
-    ["Ringkasan", "Tren Waktu", "Sentimen", "Korelasi", "Data"],
-    index=["Ringkasan", "Tren Waktu", "Sentimen", "Korelasi", "Data"].index(st.session_state.menu)
-)
-
-st.session_state.menu = menu
-
-st.sidebar.divider()
-
-filter_sentimen = st.sidebar.multiselect(
-    "Kategori Sentimen",
+sent_filter = st.sidebar.multiselect(
+    "Filter Sentimen",
     options=df["sentimen"].unique(),
     default=df["sentimen"].unique()
 )
 
-df_filtered = df[df["sentimen"].isin(filter_sentimen)]
+filtered_df = df[df["sentimen"].isin(sent_filter)]
 
-# ======================================================
-# HERO (TIDAK DIUBAH)
-# ======================================================
-st.markdown("""
-<div class="hero">
-    <div class="hero-title">Dashboard Analisis Opini Publik MBG</div>
-    <div class="hero-subtitle">
-        Dashboard ini menyajikan hasil analisis visual terhadap data komentar publik
-        terkait kasus keracunan Program Makan Bergizi Gratis (MBG). Analisis difokuskan
-        pada pola aktivitas komentar, distribusi sentimen, serta hubungan antar variabel
-        interaksi pengguna di media sosial.
+# ------------------------------
+# HEADER
+# ------------------------------
+st.markdown("## 📊 Ringkasan Statistik Utama")
+st.markdown(
+    "Dashboard ini menyajikan **indikator kinerja utama (KPI)** untuk membantu memahami **tingkat interaksi** dan **kecenderungan sentimen komentar publik** secara ringkas dan intuitif."
+)
+
+# ------------------------------
+# HITUNG KPI
+# ------------------------------
+
+jumlah_komentar = len(filtered_df)
+rata_like = filtered_df["like"].mean()
+rata_balasan = filtered_df["balasan"].mean()
+rata_sentimen = filtered_df["skor_sentimen"].mean()
+
+if rata_sentimen > 0.1:
+    sent_label = "Dominan Positif"
+    sent_class = "sent-pos"
+elif rata_sentimen < -0.1:
+    sent_label = "Dominan Negatif"
+    sent_class = "sent-neg"
+else:
+    sent_label = "Cenderung Netral"
+    sent_class = "sent-net"
+
+# ------------------------------
+# KPI CARDS (REDESIGN TOTAL)
+# ------------------------------
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Total Komentar</div>
+        <div class="kpi-value">{jumlah_komentar}</div>
+        <div class="kpi-desc">Jumlah keseluruhan komentar yang dianalisis setelah filter diterapkan.</div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# ======================================================
-# RINGKASAN – CLEAN & PRO
-# ======================================================
-if menu == "Ringkasan":
-    st.markdown('<div class="section-title">Ringkasan Statistik Utama</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Bagian ini menyajikan gambaran umum karakteristik data komentar publik '
-        'berdasarkan jumlah interaksi dan kecenderungan sentimen.'
-        '</div>',
-        unsafe_allow_html=True
-    )
+with col2:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Rata-rata Like</div>
+        <div class="kpi-value">{rata_like:.2f}</div>
+        <div class="kpi-desc">Rata-rata jumlah like yang diterima setiap komentar sebagai indikator ketertarikan audiens.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    col1, col2, col3, col4 = st.columns(4)
+with col3:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Rata-rata Balasan</div>
+        <div class="kpi-value">{rata_balasan:.2f}</div>
+        <div class="kpi-desc">Proporsi komentar yang memicu diskusi lanjutan melalui balasan.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    kpis = [
-        ("Total Komentar", len(df_filtered), "Tren Waktu"),
-        ("Rata-rata Like", round(df_filtered["jumlah_like"].mean(), 2), "Korelasi"),
-        ("Rata-rata Balasan", round(df_filtered["jumlah_reply"].mean(), 2), "Korelasi"),
-        ("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2), "Sentimen"),
-    ]
+with col4:
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Indeks Sentimen</div>
+        <div class="kpi-value">{rata_sentimen:.2f}</div>
+        <div class="kpi-desc">Kecenderungan sentimen publik: <span class="{sent_class}">{sent_label}</span></div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    for col, (label, value, target) in zip([col1, col2, col3, col4], kpis):
-        with col:
-            st.markdown('<div class="card kpi-card">', unsafe_allow_html=True)
-            st.markdown(f"<h4>{label}</h4>", unsafe_allow_html=True)
-            st.markdown(f"<h2>{value}</h2>", unsafe_allow_html=True)
+# ------------------------------
+# PENJELASAN SENTIMEN (BIAR AUDIENS PAHAM)
+# ------------------------------
+st.markdown("---")
+st.markdown("### 🧠 Cara Membaca Indeks Sentimen")
 
-            if st.button("Lihat Detail", key=label):
-                st.session_state.menu = target
-                st.rerun()
+st.info(
+    """
+    **Indeks Sentimen** dihitung dari skor berikut:
+    
+    • **+1** → Komentar Positif  
+    • **0** → Komentar Netral  
+    • **-1** → Komentar Negatif
 
-            st.markdown('</div>', unsafe_allow_html=True)
+    Nilai rata-rata mendekati **+1** menunjukkan persepsi publik yang sangat positif, sedangkan nilai mendekati **-1** menunjukkan sentimen negatif yang dominan.
+    """
+)
 
-# ======================================================
-# TREN WAKTU
-# ======================================================
-elif menu == "Tren Waktu":
-    tren = df_filtered.groupby(df_filtered["tanggal"].dt.date).size().reset_index(name="jumlah")
-    tren["tanggal"] = pd.to_datetime(tren["tanggal"])
+# ------------------------------
+# VISUALISASI SENTIMEN
+# ------------------------------
+st.markdown("### 📈 Distribusi Sentimen Komentar")
 
-    fig = px.area(
-        tren,
-        x="tanggal",
-        y="jumlah",
-        markers=True,
-        labels={"tanggal": "Tanggal", "jumlah": "Jumlah Komentar"}
-    )
+sent_count = filtered_df["sentimen"].value_counts().reset_index()
+sent_count.columns = ["Sentimen", "Jumlah"]
 
-    fig.update_layout(height=420, hovermode="x unified")
+fig = px.bar(
+    sent_count,
+    x="Sentimen",
+    y="Jumlah",
+    text="Jumlah",
+    title="Distribusi Jumlah Komentar Berdasarkan Sentimen"
+)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+fig.update_layout(
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    title_font_size=18
+)
 
-# ======================================================
-# SENTIMEN
-# ======================================================
-elif menu == "Sentimen":
-    sent = df_filtered["sentimen"].value_counts().reset_index()
-    sent.columns = ["sentimen", "jumlah"]
+st.plotly_chart(fig, use_container_width=True)
 
-    fig = px.bar(sent, x="jumlah", y="sentimen", orientation="h", text="jumlah")
-    fig.update_layout(height=360)
+# ------------------------------
+# TABEL DETAIL (OPSIONAL)
+# ------------------------------
+with st.expander("📄 Lihat Data Komentar"):
+    st.dataframe(filtered_df, use_container_width=True)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ======================================================
-# KORELASI
-# ======================================================
-elif menu == "Korelasi":
-    cols = [
-        "memiliki_gambar",
-        "memiliki_video",
-        "memiliki_tautan",
-        "jumlah_like",
-        "jumlah_reply",
-        "skor_sentimen"
-    ]
-
-    corr = df_filtered[cols].corr()
-
-    fig = px.imshow(
-        corr,
-        text_auto=".2f",
-        color_continuous_scale="RdBu_r"
-    )
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ======================================================
-# DATA
-# ======================================================
-elif menu == "Data":
-    keyword = st.text_input("Cari kata kunci")
-
-    df_show = df_filtered if not keyword else df_filtered[
-        df_filtered.apply(lambda r: r.astype(str).str.contains(keyword, case=False).any(), axis=1)
-    ]
-
-    st.caption(f"Menampilkan {len(df_show)} dari {len(df_filtered)} data")
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.dataframe(df_show, use_container_width=True, height=460)
-    st.markdown('</div>', unsafe_allow_html=True)
+# ------------------------------
+# FOOTER
+# ------------------------------
+st.markdown("---")
+st.caption("Dashboard ini dirancang untuk membantu analisis data secara cepat, intuitif, dan komunikatif bagi audiens non-teknis maupun akademik.")
