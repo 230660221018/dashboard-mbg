@@ -45,10 +45,21 @@ body { background-color: #f5f7fb; }
 
 .card {
     background-color: white;
-    padding: 1.8rem;
+    padding: 1.6rem;
     border-radius: 20px;
-    box-shadow: 0 14px 38px rgba(0,0,0,0.08);
-    margin-bottom: 1.8rem;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+.kpi-title {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+}
+
+.kpi-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #0f172a;
 }
 
 .section-title {
@@ -126,30 +137,30 @@ if menu == "Ringkasan":
 
     col1, col2, col3, col4 = st.columns(4)
 
-    metrics = [
-        ("Total Komentar", len(df_filtered)),
-        ("Rata-rata Like", round(df_filtered["jumlah_like"].mean(), 2)),
-        ("Rata-rata Balasan", round(df_filtered["jumlah_reply"].mean(), 2)),
-        ("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2))
+    kpis = [
+        ("Total Komentar", f"{len(df_filtered)}"),
+        ("Rata-rata Like", f"{df_filtered['jumlah_like'].mean():.2f}"),
+        ("Rata-rata Balasan", f"{df_filtered['jumlah_reply'].mean():.2f}"),
+        ("Rata-rata Skor Sentimen", f"{df_filtered['skor_sentimen'].mean():.2f}")
     ]
 
-    for col, (label, value) in zip([col1, col2, col3, col4], metrics):
+    for col, (title, value) in zip([col1, col2, col3, col4], kpis):
         col.markdown(f"""
         <div class="card">
-            <h4 style="color:#64748b">{label}</h4>
-            <h2>{value}</h2>
+            <div class="kpi-title">{title}</div>
+            <div class="kpi-value">{value}</div>
         </div>
         """, unsafe_allow_html=True)
 
 # ======================================================
-# TREN WAKTU – INTERACTIVE
+# TREN WAKTU
 # ======================================================
 elif menu == "Tren Waktu":
     st.markdown('<div class="section-title">Tren Jumlah Komentar Harian</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="section-desc">'
-        'Visualisasi ini menunjukkan perkembangan jumlah komentar publik dari waktu ke waktu '
-        'berdasarkan tanggal unggahan, sehingga dapat diamati dinamika perhatian publik terhadap isu MBG.'
+        'Visualisasi ini menunjukkan dinamika jumlah komentar publik dari waktu ke waktu '
+        'berdasarkan tanggal unggahan.'
         '</div>',
         unsafe_allow_html=True
     )
@@ -160,39 +171,22 @@ elif menu == "Tren Waktu":
         .size()
         .reset_index(name="jumlah_komentar")
     )
-
     tren["tanggal"] = pd.to_datetime(tren["tanggal"])
 
-    fig = px.area(
-        tren,
-        x="tanggal",
-        y="jumlah_komentar",
-        markers=True,
-        labels={
-            "tanggal": "Tanggal",
-            "jumlah_komentar": "Jumlah Komentar"
-        }
-    )
+    fig = px.area(tren, x="tanggal", y="jumlah_komentar", markers=True)
+    fig.update_layout(height=420, hovermode="x unified")
 
-    fig.update_layout(
-        height=420,
-        margin=dict(l=10, r=10, t=20, b=10),
-        hovermode="x unified"
-    )
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
-# SENTIMEN – INTERACTIVE BAR
+# SENTIMEN
 # ======================================================
 elif menu == "Sentimen":
     st.markdown('<div class="section-title">Distribusi Sentimen Publik</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="section-desc">'
-        'Bagian ini menggambarkan proporsi sentimen publik yang muncul dalam komentar, '
-        'sehingga dapat diketahui kecenderungan persepsi masyarakat terhadap program MBG.'
+        'Visualisasi ini menunjukkan proporsi sentimen positif, netral, dan negatif '
+        'dalam komentar publik.'
         '</div>',
         unsafe_allow_html=True
     )
@@ -200,32 +194,20 @@ elif menu == "Sentimen":
     sent = df_filtered["sentimen"].value_counts().reset_index()
     sent.columns = ["sentimen", "jumlah"]
 
-    fig = px.bar(
-        sent,
-        x="jumlah",
-        y="sentimen",
-        orientation="h",
-        text="jumlah"
-    )
+    fig = px.bar(sent, x="jumlah", y="sentimen", orientation="h", text="jumlah")
+    fig.update_layout(height=360)
 
-    fig.update_layout(
-        height=360,
-        margin=dict(l=10, r=10, t=20, b=10)
-    )
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
-# KORELASI – INTERACTIVE HEATMAP
+# KORELASI
 # ======================================================
 elif menu == "Korelasi":
     st.markdown('<div class="section-title">Korelasi Antar Variabel</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="section-desc">'
-        'Analisis korelasi digunakan untuk mengidentifikasi hubungan antar variabel numerik '
-        'yang berkaitan dengan karakteristik konten dan tingkat interaksi pengguna.'
+        'Heatmap berikut menunjukkan hubungan antar variabel numerik '
+        'yang berkaitan dengan interaksi pengguna.'
         '</div>',
         unsafe_allow_html=True
     )
@@ -241,33 +223,25 @@ elif menu == "Korelasi":
 
     corr = df_filtered[cols].corr()
 
-    fig = px.imshow(
-        corr,
-        text_auto=".2f",
-        aspect="auto",
-        color_continuous_scale="RdBu_r"
-    )
-
+    fig = px.imshow(corr, text_auto=".2f", aspect="auto", color_continuous_scale="RdBu_r")
     fig.update_layout(height=420)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
-# DATA – USER FRIENDLY
+# DATA
 # ======================================================
 elif menu == "Data":
     st.markdown('<div class="section-title">Tabel Data Opini Publik</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="section-desc">'
-        'Tabel berikut menampilkan data komentar publik yang telah melalui proses pembersihan data '
-        'dan digunakan sebagai dasar analisis pada dashboard ini.'
+        'Tabel berikut menampilkan data komentar publik yang telah dibersihkan '
+        'dan digunakan sebagai dasar analisis.'
         '</div>',
         unsafe_allow_html=True
     )
 
-    keyword = st.text_input("Cari kata kunci")
+    keyword = st.text_input("Cari kata kunci komentar")
 
     if keyword:
         df_show = df_filtered[df_filtered.apply(
@@ -276,7 +250,4 @@ elif menu == "Data":
         df_show = df_filtered
 
     st.caption(f"Menampilkan {len(df_show)} dari {len(df_filtered)} data")
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.dataframe(df_show, use_container_width=True, height=450)
-    st.markdown('</div>', unsafe_allow_html=True)
