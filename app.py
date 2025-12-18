@@ -9,76 +9,92 @@ import matplotlib.dates as mdates
 # ======================================================
 st.set_page_config(
     page_title="Dashboard Analisis Opini Publik MBG",
+    page_icon="📊",
     layout="wide"
 )
 
 # ======================================================
-# CUSTOM CSS – PROFESSIONAL & CLEAN
+# CUSTOM CSS – SENIOR LEVEL DASHBOARD
 # ======================================================
 st.markdown("""
 <style>
 body {
-    background-color: #f4f6fa;
+    background-color: #f5f7fb;
 }
 
 .block-container {
-    padding-top: 1.8rem;
+    padding-top: 1.6rem;
+    padding-bottom: 2.5rem;
 }
 
 h1, h2, h3, h4 {
-    color: #111827;
+    color: #0f172a;
 }
 
 .hero {
-    background: linear-gradient(90deg, #0f172a, #1e293b);
-    padding: 2.2rem;
-    border-radius: 18px;
+    background: linear-gradient(120deg, #020617, #1e293b);
+    padding: 2.6rem;
+    border-radius: 22px;
     color: white;
-    margin-bottom: 2rem;
+    margin-bottom: 2.4rem;
 }
 
 .hero-title {
-    font-size: 32px;
-    font-weight: 700;
+    font-size: 34px;
+    font-weight: 800;
+    margin-bottom: 0.6rem;
 }
 
 .hero-subtitle {
     font-size: 15px;
     opacity: 0.9;
-    max-width: 900px;
-    line-height: 1.6;
+    max-width: 960px;
+    line-height: 1.7;
 }
 
 .section-title {
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
 }
 
 .section-desc {
     font-size: 14px;
-    color: #4b5563;
-    margin-bottom: 1.2rem;
+    color: #475569;
+    margin-bottom: 1.4rem;
     max-width: 900px;
 }
 
 .card {
     background-color: white;
-    padding: 1.6rem;
-    border-radius: 16px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.08);
-    margin-bottom: 1.8rem;
+    padding: 1.9rem;
+    border-radius: 20px;
+    box-shadow: 0 14px 38px rgba(0,0,0,0.08);
+    margin-bottom: 1.9rem;
+}
+
+.kpi-card {
+    text-align: center;
 }
 
 .kpi-card h4 {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 600;
     margin-bottom: 0.2rem;
-    color: #6b7280;
-    font-weight: 500;
 }
 
 .kpi-card h2 {
+    font-size: 30px;
+    font-weight: 800;
     margin: 0;
-    font-weight: 700;
+    color: #020617;
+}
+
+.data-info {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 0.6rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -95,18 +111,18 @@ def load_data():
 df = load_data()
 
 # ======================================================
-# SIDEBAR – CLEAN & AKADEMIK
+# SIDEBAR
 # ======================================================
-st.sidebar.markdown("### Navigasi Analisis")
+st.sidebar.markdown("## 📌 Navigasi Analisis")
 
 menu = st.sidebar.radio(
-    "Pilih Menu",
+    "Menu Dashboard",
     ["Ringkasan", "Tren Waktu", "Sentimen", "Korelasi", "Data"]
 )
 
 st.sidebar.divider()
 
-st.sidebar.markdown("### Filter Data")
+st.sidebar.markdown("### 🎯 Filter Data")
 
 filter_sentimen = st.sidebar.multiselect(
     "Kategori Sentimen",
@@ -123,7 +139,7 @@ st.sidebar.caption(
 )
 
 # ======================================================
-# HERO HEADER
+# HERO HEADER (TIDAK DIUBAH TEKS)
 # ======================================================
 st.markdown("""
 <div class="hero">
@@ -153,7 +169,7 @@ if menu == "Ringkasan":
     col1, col2, col3, col4 = st.columns(4)
 
     kpi = [
-        ("Total Komentar", len(df_filtered)),
+        ("Total Komentar", f"{len(df_filtered):,}"),
         ("Rata-rata Like", round(df_filtered["jumlah_like"].mean(), 2)),
         ("Rata-rata Balasan", round(df_filtered["jumlah_reply"].mean(), 2)),
         ("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2))
@@ -168,7 +184,7 @@ if menu == "Ringkasan":
         """, unsafe_allow_html=True)
 
 # ======================================================
-# TREN WAKTU – HARIAN RAPIH
+# TREN WAKTU
 # ======================================================
 elif menu == "Tren Waktu":
     st.markdown('<div class="section-title">Tren Jumlah Komentar Harian</div>', unsafe_allow_html=True)
@@ -189,17 +205,29 @@ elif menu == "Tren Waktu":
 
     tren["tanggal"] = pd.to_datetime(tren["tanggal"])
 
-    fig, ax = plt.subplots(figsize=(12, 4))
-    ax.plot(tren["tanggal"], tren["jumlah_komentar"], linewidth=2.5)
+    fig, ax = plt.subplots(figsize=(13, 4.8))
+    ax.plot(
+        tren["tanggal"],
+        tren["jumlah_komentar"],
+        linewidth=2.8,
+        marker="o",
+        markersize=4
+    )
+
+    ax.fill_between(
+        tren["tanggal"],
+        tren["jumlah_komentar"],
+        alpha=0.08
+    )
 
     ax.set_xlabel("Tanggal")
     ax.set_ylabel("Jumlah Komentar")
-    ax.grid(alpha=0.3)
+    ax.grid(alpha=0.25)
 
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=5, maxticks=9))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y"))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=6, maxticks=10))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b %Y"))
 
-    plt.xticks(rotation=45, fontsize=9)
+    plt.xticks(rotation=35, fontsize=9)
     plt.tight_layout()
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -219,7 +247,7 @@ elif menu == "Sentimen":
         unsafe_allow_html=True
     )
 
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(7, 4.5))
     df_filtered["sentimen"].value_counts().plot(kind="bar", ax=ax)
 
     ax.set_xlabel("Kategori Sentimen")
@@ -254,7 +282,7 @@ elif menu == "Korelasi":
 
     corr = df_filtered[kolom_numerik].corr()
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5))
     sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -262,7 +290,7 @@ elif menu == "Korelasi":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
-# DATA
+# DATA – USER FRIENDLY
 # ======================================================
 elif menu == "Data":
     st.markdown('<div class="section-title">Tabel Data Opini Publik</div>', unsafe_allow_html=True)
@@ -274,8 +302,17 @@ elif menu == "Data":
         unsafe_allow_html=True
     )
 
+    st.markdown(
+        '<div class="data-info">'
+        'Gunakan fitur pencarian, pengurutan kolom, dan scroll untuk menelusuri data dengan lebih mudah.'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.dataframe(df_filtered, use_container_width=True)
+    st.dataframe(
+        df_filtered,
+        use_container_width=True,
+        height=450
+    )
     st.markdown('</div>', unsafe_allow_html=True)
-
-
