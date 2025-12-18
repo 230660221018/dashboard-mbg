@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import matplotlib.dates as mdates
+import plotly.express as px
 
 # ======================================================
 # KONFIGURASI HALAMAN
@@ -14,21 +12,15 @@ st.set_page_config(
 )
 
 # ======================================================
-# CUSTOM CSS – SENIOR LEVEL DASHBOARD
+# CUSTOM CSS – CLEAN & SENIOR
 # ======================================================
 st.markdown("""
 <style>
-body {
-    background-color: #f5f7fb;
-}
+body { background-color: #f5f7fb; }
 
 .block-container {
     padding-top: 1.6rem;
     padding-bottom: 2.5rem;
-}
-
-h1, h2, h3, h4 {
-    color: #0f172a;
 }
 
 .hero {
@@ -42,7 +34,6 @@ h1, h2, h3, h4 {
 .hero-title {
     font-size: 34px;
     font-weight: 800;
-    margin-bottom: 0.6rem;
 }
 
 .hero-subtitle {
@@ -52,49 +43,24 @@ h1, h2, h3, h4 {
     line-height: 1.7;
 }
 
+.card {
+    background-color: white;
+    padding: 1.8rem;
+    border-radius: 20px;
+    box-shadow: 0 14px 38px rgba(0,0,0,0.08);
+    margin-bottom: 1.8rem;
+}
+
 .section-title {
     font-size: 24px;
     font-weight: 700;
-    margin-bottom: 0.3rem;
 }
 
 .section-desc {
     font-size: 14px;
     color: #475569;
-    margin-bottom: 1.4rem;
     max-width: 900px;
-}
-
-.card {
-    background-color: white;
-    padding: 1.9rem;
-    border-radius: 20px;
-    box-shadow: 0 14px 38px rgba(0,0,0,0.08);
-    margin-bottom: 1.9rem;
-}
-
-.kpi-card {
-    text-align: center;
-}
-
-.kpi-card h4 {
-    font-size: 14px;
-    color: #64748b;
-    font-weight: 600;
-    margin-bottom: 0.2rem;
-}
-
-.kpi-card h2 {
-    font-size: 30px;
-    font-weight: 800;
-    margin: 0;
-    color: #020617;
-}
-
-.data-info {
-    font-size: 13px;
-    color: #64748b;
-    margin-bottom: 0.6rem;
+    margin-bottom: 1.4rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -113,7 +79,7 @@ df = load_data()
 # ======================================================
 # SIDEBAR
 # ======================================================
-st.sidebar.markdown("## 📌 Navigasi Analisis")
+st.sidebar.markdown("## Navigasi Analisis")
 
 menu = st.sidebar.radio(
     "Menu Dashboard",
@@ -121,8 +87,6 @@ menu = st.sidebar.radio(
 )
 
 st.sidebar.divider()
-
-st.sidebar.markdown("### 🎯 Filter Data")
 
 filter_sentimen = st.sidebar.multiselect(
     "Kategori Sentimen",
@@ -132,14 +96,8 @@ filter_sentimen = st.sidebar.multiselect(
 
 df_filtered = df[df["sentimen"].isin(filter_sentimen)]
 
-st.sidebar.divider()
-st.sidebar.caption(
-    "Dashboard ini dikembangkan untuk keperluan analisis data dan "
-    "visualisasi opini publik dalam konteks akademik."
-)
-
 # ======================================================
-# HERO HEADER (TIDAK DIUBAH TEKS)
+# HERO (TEKS TIDAK DIUBAH)
 # ======================================================
 st.markdown("""
 <div class="hero">
@@ -168,23 +126,23 @@ if menu == "Ringkasan":
 
     col1, col2, col3, col4 = st.columns(4)
 
-    kpi = [
-        ("Total Komentar", f"{len(df_filtered):,}"),
+    metrics = [
+        ("Total Komentar", len(df_filtered)),
         ("Rata-rata Like", round(df_filtered["jumlah_like"].mean(), 2)),
         ("Rata-rata Balasan", round(df_filtered["jumlah_reply"].mean(), 2)),
         ("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2))
     ]
 
-    for col, (label, value) in zip([col1, col2, col3, col4], kpi):
+    for col, (label, value) in zip([col1, col2, col3, col4], metrics):
         col.markdown(f"""
-        <div class="card kpi-card">
-            <h4>{label}</h4>
+        <div class="card">
+            <h4 style="color:#64748b">{label}</h4>
             <h2>{value}</h2>
         </div>
         """, unsafe_allow_html=True)
 
 # ======================================================
-# TREN WAKTU
+# TREN WAKTU – INTERACTIVE
 # ======================================================
 elif menu == "Tren Waktu":
     st.markdown('<div class="section-title">Tren Jumlah Komentar Harian</div>', unsafe_allow_html=True)
@@ -205,37 +163,29 @@ elif menu == "Tren Waktu":
 
     tren["tanggal"] = pd.to_datetime(tren["tanggal"])
 
-    fig, ax = plt.subplots(figsize=(13, 4.8))
-    ax.plot(
-        tren["tanggal"],
-        tren["jumlah_komentar"],
-        linewidth=2.8,
-        marker="o",
-        markersize=4
+    fig = px.area(
+        tren,
+        x="tanggal",
+        y="jumlah_komentar",
+        markers=True,
+        labels={
+            "tanggal": "Tanggal",
+            "jumlah_komentar": "Jumlah Komentar"
+        }
     )
 
-    ax.fill_between(
-        tren["tanggal"],
-        tren["jumlah_komentar"],
-        alpha=0.08
+    fig.update_layout(
+        height=420,
+        margin=dict(l=10, r=10, t=20, b=10),
+        hovermode="x unified"
     )
-
-    ax.set_xlabel("Tanggal")
-    ax.set_ylabel("Jumlah Komentar")
-    ax.grid(alpha=0.25)
-
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=6, maxticks=10))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b %Y"))
-
-    plt.xticks(rotation=35, fontsize=9)
-    plt.tight_layout()
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.pyplot(fig)
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
-# SENTIMEN
+# SENTIMEN – INTERACTIVE BAR
 # ======================================================
 elif menu == "Sentimen":
     st.markdown('<div class="section-title">Distribusi Sentimen Publik</div>', unsafe_allow_html=True)
@@ -247,19 +197,28 @@ elif menu == "Sentimen":
         unsafe_allow_html=True
     )
 
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    df_filtered["sentimen"].value_counts().plot(kind="bar", ax=ax)
+    sent = df_filtered["sentimen"].value_counts().reset_index()
+    sent.columns = ["sentimen", "jumlah"]
 
-    ax.set_xlabel("Kategori Sentimen")
-    ax.set_ylabel("Jumlah Komentar")
-    ax.grid(axis="y", alpha=0.3)
+    fig = px.bar(
+        sent,
+        x="jumlah",
+        y="sentimen",
+        orientation="h",
+        text="jumlah"
+    )
+
+    fig.update_layout(
+        height=360,
+        margin=dict(l=10, r=10, t=20, b=10)
+    )
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.pyplot(fig)
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
-# KORELASI
+# KORELASI – INTERACTIVE HEATMAP
 # ======================================================
 elif menu == "Korelasi":
     st.markdown('<div class="section-title">Korelasi Antar Variabel</div>', unsafe_allow_html=True)
@@ -271,7 +230,7 @@ elif menu == "Korelasi":
         unsafe_allow_html=True
     )
 
-    kolom_numerik = [
+    cols = [
         "memiliki_gambar",
         "memiliki_video",
         "memiliki_tautan",
@@ -280,13 +239,19 @@ elif menu == "Korelasi":
         "skor_sentimen"
     ]
 
-    corr = df_filtered[kolom_numerik].corr()
+    corr = df_filtered[cols].corr()
 
-    fig, ax = plt.subplots(figsize=(9, 5))
-    sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
+    fig = px.imshow(
+        corr,
+        text_auto=".2f",
+        aspect="auto",
+        color_continuous_scale="RdBu_r"
+    )
+
+    fig.update_layout(height=420)
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.pyplot(fig)
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
@@ -302,17 +267,16 @@ elif menu == "Data":
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        '<div class="data-info">'
-        'Gunakan fitur pencarian, pengurutan kolom, dan scroll untuk menelusuri data dengan lebih mudah.'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    keyword = st.text_input("Cari kata kunci")
+
+    if keyword:
+        df_show = df_filtered[df_filtered.apply(
+            lambda row: row.astype(str).str.contains(keyword, case=False).any(), axis=1)]
+    else:
+        df_show = df_filtered
+
+    st.caption(f"Menampilkan {len(df_show)} dari {len(df_filtered)} data")
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.dataframe(
-        df_filtered,
-        use_container_width=True,
-        height=450
-    )
+    st.dataframe(df_show, use_container_width=True, height=450)
     st.markdown('</div>', unsafe_allow_html=True)
