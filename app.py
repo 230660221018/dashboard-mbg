@@ -12,29 +12,29 @@ st.set_page_config(
 )
 
 # ======================================================
-# QUERY PARAM HANDLER (NAVIGATION FIX)
+# SESSION STATE NAVIGATION (ANTI ERROR)
 # ======================================================
-query_params = st.query_params
-default_menu = query_params.get("menu", ["Ringkasan"])[0]
+if "menu" not in st.session_state:
+    st.session_state.menu = "Ringkasan"
 
 # ======================================================
-# CUSTOM CSS – WOW & SENIOR
+# CUSTOM CSS – ENTERPRISE LEVEL
 # ======================================================
 st.markdown("""
 <style>
-body { background-color: #f5f7fb; }
+body { background-color: #f6f8fc; }
 
 .block-container {
-    padding-top: 1.5rem;
+    padding-top: 1.4rem;
     padding-bottom: 2.5rem;
 }
 
 .hero {
     background: linear-gradient(120deg, #020617, #1e293b);
     padding: 2.8rem;
-    border-radius: 22px;
+    border-radius: 24px;
     color: white;
-    margin-bottom: 2.4rem;
+    margin-bottom: 2.6rem;
 }
 
 .hero-title {
@@ -51,19 +51,27 @@ body { background-color: #f5f7fb; }
 
 .card {
     background-color: white;
-    padding: 1.7rem;
-    border-radius: 20px;
-    box-shadow: 0 14px 38px rgba(0,0,0,0.08);
+    padding: 1.8rem;
+    border-radius: 22px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.08);
     margin-bottom: 1.6rem;
 }
 
-.kpi-link {
-    text-decoration: none;
-    color: inherit;
+.kpi-card h4 {
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
 }
 
-.kpi-link:hover {
-    transform: scale(1.015);
+.kpi-card h2 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 800;
+}
+
+.kpi-card button {
+    margin-top: 0.8rem;
+    width: 100%;
 }
 
 .section-title {
@@ -99,8 +107,10 @@ st.sidebar.markdown("## Navigasi Analisis")
 menu = st.sidebar.radio(
     "Menu Dashboard",
     ["Ringkasan", "Tren Waktu", "Sentimen", "Korelasi", "Data"],
-    index=["Ringkasan", "Tren Waktu", "Sentimen", "Korelasi", "Data"].index(default_menu)
+    index=["Ringkasan", "Tren Waktu", "Sentimen", "Korelasi", "Data"].index(st.session_state.menu)
 )
+
+st.session_state.menu = menu
 
 st.sidebar.divider()
 
@@ -128,7 +138,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ======================================================
-# RINGKASAN (KPI CLICKABLE — FIXED)
+# RINGKASAN – CLEAN & PRO
 # ======================================================
 if menu == "Ringkasan":
     st.markdown('<div class="section-title">Ringkasan Statistik Utama</div>', unsafe_allow_html=True)
@@ -146,19 +156,20 @@ if menu == "Ringkasan":
         ("Total Komentar", len(df_filtered), "Tren Waktu"),
         ("Rata-rata Like", round(df_filtered["jumlah_like"].mean(), 2), "Korelasi"),
         ("Rata-rata Balasan", round(df_filtered["jumlah_reply"].mean(), 2), "Korelasi"),
-        ("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2), "Sentimen")
+        ("Rata-rata Skor Sentimen", round(df_filtered["skor_sentimen"].mean(), 2), "Sentimen"),
     ]
 
     for col, (label, value, target) in zip([col1, col2, col3, col4], kpis):
-        col.markdown(f"""
-        <a class="kpi-link" href="?menu={target}">
-            <div class="card">
-                <h4 style="color:#64748b">{label}</h4>
-                <h2>{value}</h2>
-                <p style="font-size:13px;color:#3b82f6">Klik untuk detail</p>
-            </div>
-        </a>
-        """, unsafe_allow_html=True)
+        with col:
+            st.markdown('<div class="card kpi-card">', unsafe_allow_html=True)
+            st.markdown(f"<h4>{label}</h4>", unsafe_allow_html=True)
+            st.markdown(f"<h2>{value}</h2>", unsafe_allow_html=True)
+
+            if st.button("Lihat Detail", key=label):
+                st.session_state.menu = target
+                st.rerun()
+
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================
 # TREN WAKTU
