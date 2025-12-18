@@ -12,71 +12,80 @@ st.set_page_config(
 )
 
 # ======================================================
-# STYLE – PROFESSIONAL & CLEAN
+# ADVANCED STYLE – ENTERPRISE
 # ======================================================
 st.markdown("""
 <style>
-body { background-color: #f6f7fb; }
+body { background-color: #f4f6fb; }
 
 .block-container {
-    padding-top: 1.5rem;
+    padding-top: 1.4rem;
     padding-bottom: 2.5rem;
 }
 
+/* HERO */
 .hero {
-    background: linear-gradient(120deg, #020617, #1e293b);
-    padding: 2.5rem;
-    border-radius: 20px;
+    background: linear-gradient(135deg, #020617, #0f172a, #1e293b);
+    padding: 3rem;
+    border-radius: 26px;
     color: white;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2.8rem;
 }
 
 .hero-title {
-    font-size: 34px;
-    font-weight: 800;
+    font-size: 40px;
+    font-weight: 900;
 }
 
 .hero-subtitle {
-    font-size: 15px;
-    line-height: 1.7;
-    opacity: 0.9;
-    max-width: 980px;
+    font-size: 16px;
+    line-height: 1.75;
+    opacity: 0.92;
+    max-width: 1000px;
 }
 
+/* SECTION */
 .section-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 0.2rem;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
 }
 
 .section-desc {
     font-size: 14px;
     color: #475569;
-    max-width: 900px;
-    margin-bottom: 1.6rem;
+    max-width: 950px;
+    margin-bottom: 2rem;
 }
 
-.kpi-card {
-    background: white;
-    padding: 1.6rem;
-    border-radius: 18px;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+/* KPI */
+.kpi {
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    padding: 1.8rem;
+    border-radius: 22px;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.12);
+    height: 100%;
+}
+
+.kpi-icon {
+    font-size: 30px;
+}
+
+.kpi-value {
+    font-size: 40px;
+    font-weight: 900;
+    margin-top: 0.5rem;
 }
 
 .kpi-label {
     font-size: 14px;
-    color: #64748b;
-}
-
-.kpi-value {
-    font-size: 36px;
-    font-weight: 800;
-    margin-top: 0.4rem;
+    color: #475569;
+    margin-top: 0.2rem;
 }
 
 .kpi-desc {
     font-size: 13px;
-    color: #475569;
+    color: #64748b;
     margin-top: 0.6rem;
 }
 </style>
@@ -94,24 +103,32 @@ def load_data():
 df = load_data()
 
 # ======================================================
-# SIDEBAR – ANALYSIS CONTROL
+# SIDEBAR – SMART CONTROL
 # ======================================================
-st.sidebar.markdown("## 🔎 Pengaturan Analisis")
+st.sidebar.markdown("## 🎛️ Kontrol Analisis")
 
-menu = st.sidebar.radio(
-    "Pilih Tampilan",
-    ["Ringkasan", "Tren Waktu", "Sentimen", "Korelasi", "Data"]
+date_min, date_max = df["tanggal"].min(), df["tanggal"].max()
+date_range = st.sidebar.date_input(
+    "Rentang Waktu Analisis",
+    value=(date_min, date_max)
 )
 
-st.sidebar.divider()
-
 filter_sentimen = st.sidebar.multiselect(
-    "Filter Sentimen",
+    "Fokus Sentimen",
     options=df["sentimen"].unique(),
     default=df["sentimen"].unique()
 )
 
-df_filtered = df[df["sentimen"].isin(filter_sentimen)]
+menu = st.sidebar.radio(
+    "Tampilan Analisis",
+    ["Ringkasan Eksekutif", "Tren Opini", "Distribusi Sentimen", "Hubungan Variabel", "Data Mentah"]
+)
+
+df_filtered = df[
+    (df["tanggal"].dt.date >= date_range[0]) &
+    (df["tanggal"].dt.date <= date_range[1]) &
+    (df["sentimen"].isin(filter_sentimen))
+]
 
 # ======================================================
 # HERO
@@ -122,183 +139,99 @@ st.markdown("""
     <div class="hero-subtitle">
         Dashboard ini menyajikan hasil analisis visual terhadap data komentar publik
         terkait kasus keracunan Program Makan Bergizi Gratis (MBG). Analisis difokuskan
-        pada pola aktivitas komentar, distribusi sentimen, serta hubungan antar variabel
-        interaksi pengguna di media sosial.
+        pada dinamika opini, intensitas interaksi, serta kecenderungan sentimen publik
+        di media sosial.
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ======================================================
-# RINGKASAN (KPI YANG MASUK AKAL)
+# RINGKASAN EKSEKUTIF (WOW)
 # ======================================================
-if menu == "Ringkasan":
+if menu == "Ringkasan Eksekutif":
 
-    st.markdown('<div class="section-title">Ringkasan Statistik Utama</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Ringkasan Eksekutif</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="section-desc">'
-        'Bagian ini menyajikan gambaran umum karakteristik data komentar publik '
-        'berdasarkan intensitas interaksi dan kecenderungan sentimen.'
+        'Gambaran tingkat perhatian publik dan kecenderungan opini terhadap isu MBG '
+        'berdasarkan analisis data komentar.'
         '</div>',
         unsafe_allow_html=True
     )
 
-    total_komentar = len(df_filtered)
+    total = len(df_filtered)
     avg_like = df_filtered["jumlah_like"].mean()
     avg_reply = df_filtered["jumlah_reply"].mean()
-    avg_sentiment = df_filtered["skor_sentimen"].mean()
+    avg_sent = df_filtered["skor_sentimen"].mean()
 
-    sentimen_kecenderungan = (
-        "Cenderung Positif" if avg_sentiment > 0.05 else
-        "Relatif Netral" if -0.05 <= avg_sentiment <= 0.05 else
-        "Cenderung Negatif"
+    sent_label = (
+        "Dominan Positif" if avg_sent > 0.05 else
+        "Relatif Netral" if -0.05 <= avg_sent <= 0.05 else
+        "Dominan Negatif"
     )
 
-    col1, col2, col3, col4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
 
-    with col1:
+    with c1:
         st.markdown(f"""
-        <div class="kpi-card">
+        <div class="kpi">
+            <div class="kpi-icon">💬</div>
+            <div class="kpi-value">{total}</div>
             <div class="kpi-label">Total Komentar</div>
-            <div class="kpi-value">{total_komentar}</div>
-            <div class="kpi-desc">Jumlah seluruh komentar yang dianalisis</div>
+            <div class="kpi-desc">Volume perhatian publik terhadap isu MBG</div>
         </div>
         """, unsafe_allow_html=True)
 
-    with col2:
+    with c2:
         st.markdown(f"""
-        <div class="kpi-card">
+        <div class="kpi">
+            <div class="kpi-icon">👍</div>
+            <div class="kpi-value">{avg_like:.1f}</div>
             <div class="kpi-label">Rata-rata Like</div>
-            <div class="kpi-value">{avg_like:.2f}</div>
-            <div class="kpi-desc">Tingkat apresiasi pengguna terhadap komentar</div>
+            <div class="kpi-desc">Indikasi apresiasi dan visibilitas komentar</div>
         </div>
         """, unsafe_allow_html=True)
 
-    with col3:
+    with c3:
         st.markdown(f"""
-        <div class="kpi-card">
+        <div class="kpi">
+            <div class="kpi-icon">💬↩️</div>
+            <div class="kpi-value">{avg_reply:.1f}</div>
             <div class="kpi-label">Rata-rata Balasan</div>
-            <div class="kpi-value">{avg_reply:.2f}</div>
-            <div class="kpi-desc">Indikasi diskusi lanjutan dalam komentar</div>
+            <div class="kpi-desc">Tingkat diskusi lanjutan antar pengguna</div>
         </div>
         """, unsafe_allow_html=True)
 
-    with col4:
+    with c4:
         st.markdown(f"""
-        <div class="kpi-card">
+        <div class="kpi">
+            <div class="kpi-icon">🧭</div>
+            <div class="kpi-value">{avg_sent:.2f}</div>
             <div class="kpi-label">Kecenderungan Sentimen</div>
-            <div class="kpi-value">{avg_sentiment:.2f}</div>
-            <div class="kpi-desc">{sentimen_kecenderungan} berdasarkan skor rata-rata</div>
+            <div class="kpi-desc">{sent_label} berdasarkan skor sentimen</div>
         </div>
         """, unsafe_allow_html=True)
 
 # ======================================================
-# TREN WAKTU
+# SECTION LAIN (tetap stabil & rapi)
 # ======================================================
-elif menu == "Tren Waktu":
-
-    st.markdown('<div class="section-title">Tren Jumlah Komentar Harian</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Visualisasi ini menunjukkan dinamika jumlah komentar publik dari waktu ke waktu.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
+elif menu == "Tren Opini":
     tren = df_filtered.groupby(df_filtered["tanggal"].dt.date).size().reset_index(name="jumlah")
     tren["tanggal"] = pd.to_datetime(tren["tanggal"])
-
-    fig = px.line(
-        tren,
-        x="tanggal",
-        y="jumlah",
-        markers=True,
-        labels={"tanggal": "Tanggal", "jumlah": "Jumlah Komentar"}
-    )
-
-    fig.update_layout(height=420, hovermode="x unified")
+    fig = px.line(tren, x="tanggal", y="jumlah", markers=True)
     st.plotly_chart(fig, use_container_width=True)
 
-# ======================================================
-# SENTIMEN
-# ======================================================
-elif menu == "Sentimen":
-
-    st.markdown('<div class="section-title">Distribusi Sentimen Publik</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Distribusi ini menunjukkan proporsi sentimen yang muncul dalam komentar publik.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
+elif menu == "Distribusi Sentimen":
     sent = df_filtered["sentimen"].value_counts().reset_index()
     sent.columns = ["sentimen", "jumlah"]
-
-    fig = px.bar(
-        sent,
-        x="jumlah",
-        y="sentimen",
-        orientation="h",
-        text="jumlah"
-    )
-
-    fig.update_layout(height=360)
+    fig = px.bar(sent, x="jumlah", y="sentimen", orientation="h", text="jumlah")
     st.plotly_chart(fig, use_container_width=True)
 
-# ======================================================
-# KORELASI
-# ======================================================
-elif menu == "Korelasi":
-
-    st.markdown('<div class="section-title">Korelasi Antar Variabel</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Analisis korelasi untuk melihat hubungan antar variabel numerik dalam data.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    cols = [
-        "memiliki_gambar",
-        "memiliki_video",
-        "memiliki_tautan",
-        "jumlah_like",
-        "jumlah_reply",
-        "skor_sentimen"
-    ]
-
+elif menu == "Hubungan Variabel":
+    cols = ["jumlah_like", "jumlah_reply", "skor_sentimen"]
     corr = df_filtered[cols].corr()
-
-    fig = px.imshow(
-        corr,
-        text_auto=".2f",
-        aspect="auto",
-        color_continuous_scale="RdBu_r"
-    )
-
-    fig.update_layout(height=420)
+    fig = px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r")
     st.plotly_chart(fig, use_container_width=True)
 
-# ======================================================
-# DATA
-# ======================================================
-elif menu == "Data":
-
-    st.markdown('<div class="section-title">Tabel Data Komentar</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-desc">'
-        'Menampilkan data komentar yang telah melalui proses pembersihan.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    keyword = st.text_input("Cari kata kunci komentar")
-
-    if keyword:
-        df_show = df_filtered[df_filtered.astype(str).apply(
-            lambda x: x.str.contains(keyword, case=False)).any(axis=1)]
-    else:
-        df_show = df_filtered
-
-    st.caption(f"Menampilkan {len(df_show)} dari {len(df_filtered)} data")
-    st.dataframe(df_show, use_container_width=True, height=450)
+elif menu == "Data Mentah":
+    st.dataframe(df_filtered, use_container_width=True, height=500)
